@@ -7,7 +7,7 @@ from out.SlangLexer import SlangLexer
 from out.SlangParser import SlangParser
 from out.SlangVisitor import SlangVisitor
 
-from abstractTree import Prog
+from abstractTree import getProg
 from attributes import Evaluator
 from flatten import flatten
 from gba import toGBA, asmPrinter
@@ -39,7 +39,7 @@ def main():
 
     # create abstract tree with own classes
     print("\n------ Abstract Tree ------")
-    p = Prog.fromContext(progContext)
+    p = getProg(progContext)
     p.print()
 
 

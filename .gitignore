@@ -1,3 +1,5 @@
 gba/**/*
 **/*.pyc
 main/Compiler/out/Compiler
+*.interp
+main/Emulicious/Emulicious.ini
