@@ -3,12 +3,17 @@ options {
     language = Python3;
 }
 
-prog:   (line NEWLINE)* line? NEWLINE? EOF
-    |   (line NEWLINE)* NEWLINE? EOF
-    ;
+prog:   context EOF;
 
-line: assignment WS? COMM?
-    | COMM
+block: '{' NEWLINE? WS? context WS? NEWLINE? '}';
+
+context: (line NEWLINE)* line? NEWLINE?;
+
+functionDecl: IDENT WS? '(' WS? ')' WS? block;
+
+line: WS? assignment WS? COMM?
+    | WS? COMM
+    | WS? functionDecl
     ;
 
 assignment  :   IDENT WS? '=' WS? expression;

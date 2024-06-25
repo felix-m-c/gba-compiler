@@ -5,7 +5,7 @@ test:
 	python3 compiler.py SlangCode/smileyEat.s code.asm
 	ln -f code.asm ../Assembler/build/main.asm
 	scripts/assembler.sh
-	scripts/runEmu.sh
+	# scripts/runEmu.sh
 
 tree:
 	java -jar ../antlr4_13_1.jar Slang.g4 -o out
