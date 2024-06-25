@@ -8,3 +8,8 @@ a() {
     # comment about the next line of code
     otherB = (numbr+2) - (b+2)
 }
+
+if (a==2) {
+    # interesting
+    _ = clearTilemap()
+}
