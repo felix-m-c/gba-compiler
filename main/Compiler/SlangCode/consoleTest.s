@@ -1,0 +1,10 @@
+a = 36
+_ = printByte a
+a = 64
+_ = printByte a
+a = 41
+_ = printByte a
+a = 33
+_ = printByte a
+a = 75
+_ = printByte a

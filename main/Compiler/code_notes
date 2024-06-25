@@ -1,0 +1,12 @@
+a = 2+2 #yohoo
+-> constant a=4
+ref (a)
+
+b = (b+a)*(3 / 2)
+
+t1 = b+a
+t2 = 3/2 = 1
+b = t1 * t2
+
+
+printByte 12
