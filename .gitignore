@@ -1,7 +1,8 @@
 gba/**/*
 **/*.pyc
-main/Compiler/out/Compiler
+main/Compiler/out/*
 *.interp
 main/Compiler/.antlr
 main/Emulicious/Emulicious.ini
-main/Compiler/.antlr/Slang*
+main/Compiler/.antlr/*
+main/Assembler/build/*

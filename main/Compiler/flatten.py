@@ -41,15 +41,28 @@ def flat(exp:Exp)->tuple[list, IDENT]:
     else:
         return [], exp
 
-def flatten(lines:list):
-    newLines = []
-    for a in lines:
-        if isinstance(a, Assignment):
-            val = a.value
-            newNewLines, tVar = flat(val)
-            newLines += newNewLines
-            newLines.append(Assignment(a.target, tVar))
+def flatten(context:Context):
+    #print("flatten:", type(context))
+    assert isinstance(context, Context)
+    newElements = []
+    for el in context.elements:
+        #print(f"line: {type(el)}")
+        if isinstance(el, Assignment):
+            val = el.value
+            newNewElements, tVar = flat(val)
+            newElements += newNewElements
+            newElements.append(Assignment(el.target, tVar))
+        elif isinstance(el, FunctionDecl):
+            el.context = flatten(el.context)
+            newElements.append(el)
+        elif isinstance(el, IfStatement):
+            el.context = flatten(el.context)
+            newElements.append(el)
+        elif isinstance(el, WhileLoop):
+            el.context = flatten(el.context)
+            newElements.append(el)
         else:
-            newLines.append(a)
+            newElements.append(el)
     #print("---")
-    return newLines
+    context.elements = newElements
+    return context

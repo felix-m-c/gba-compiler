@@ -5,23 +5,23 @@ options {
 
 prog:   context EOF;
 
-block: '{' NEWLINE? WS? context WS? NEWLINE? '}';
+block: '{' newline? ws? context ws? newline? '}';
 
-context: (line NEWLINE)* line? NEWLINE?;
+context: newline? (line newline)* line? newline?;
 
-functionDecl: IDENT WS? '(' WS? ')' WS? block;
+functionDecl: ident ws? '(' ws? ')' ws? block;
 
-line: WS? assignment WS? COMM?
-    | WS? COMM
-    | WS? functionDecl
-    | WS? whileLoop
-    | WS? ifStatement
+line: ws? assignment ws? comment?
+    | ws? comment
+    | ws? functionDecl
+    | ws? whileLoop
+    | ws? ifStatement
     ;
 
-whileLoop: 'while' WS? '(' WS? boolExpression WS? ')' WS? block;
-ifStatement: 'if' WS? '(' WS? boolExpression WS? ')' WS? block;
+whileLoop: 'while' ws? '(' ws? boolExpression ws? ')' ws? block;
+ifStatement: 'if' ws? '(' ws? boolExpression ws? ')' ws? block;
 
-assignment  :   IDENT WS? '=' WS? expression;
+assignment  :   ident ws? '=' ws? expression;
 
 expression: arithmeticExpression
     |   boolExpression
@@ -31,6 +31,8 @@ expression: arithmeticExpression
 
 boolExpression: equals
     | notEquals
+    | ident
+    | s_bool
     ;
 
 arithmeticExpression: addition
@@ -39,27 +41,35 @@ arithmeticExpression: addition
     |   division
     ;
 
-brackets    :   '(' WS? expression WS? ')';
+brackets    :   '(' ws? expression ws? ')';
 
-equals      :   value WS? '==' WS? value;
-notEquals   :   value WS? '!=' WS? value;
-addition    :   value WS? '+' WS? value;
-subtraction :   value WS? '-' WS? value;
-multiplication: value WS? '*' WS? value;
-division    :   value WS? '/' WS? value;
+equals      :   value ws? '==' ws? value;
+notEquals   :   value ws? '!=' ws? value;
+addition    :   value ws? '+' ws? value;
+subtraction :   value ws? '-' ws? value;
+multiplication: value ws? '*' ws? value;
+division    :   value ws? '/' ws? value;
 
-value : IDENT
-    |   INT
+value : ident
+    |   s_int
     |   brackets
+    |   s_bool
     ;
 
-functionCall:   IDENT WS? '(' WS? (value','WS?)* value WS? ')'
-    |   IDENT WS? '(' WS? (value','WS?)* WS? ')'
+functionCall:   ident ws? '(' ws? (value ',' ws?)* value ws? ')'
+    |   ident ws? '(' ws? (value ',' ws?)* ws? ')'
     ;
 
-
+s_int : INT;
 INT     : [0-9]+ ;
+s_bool  : BOOL;
+BOOL    : 'True'|'False';
+ident   : GLOBAL? IDENT;
+GLOBAL  : 'global';
 IDENT   : [a-zA-Z]+|'_';
+comment : COMM;
 COMM    : '#'[#a-zA-Z0-9 +\-*/=%&"()]+;
+newline : NEWLINE;
 NEWLINE : [\r\n]+;
-WS      : (' ')+ {self.skip();};
+ws      : WS;
+WS      : (' ')+ -> channel (HIDDEN);

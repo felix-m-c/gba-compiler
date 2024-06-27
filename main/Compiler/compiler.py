@@ -10,7 +10,7 @@ from out.SlangVisitor import SlangVisitor
 from abstractTree import getProg
 from attributes import Evaluator
 from flatten import flatten
-from gba import toGBA, asmPrinter
+from gba import GBAconverter
 
 if len(sys.argv)!=3:
     print("usage: python3 compiler.py <InPath> <OutPath>")
@@ -28,7 +28,7 @@ def main():
 
 
     print("\n------ Parser ------")
-    input_stream = FileStream(INFILE)
+    input_stream = FileStream(INFILE, encoding="UTF-8")
     lexer = SlangLexer(input_stream)
     tokenStream = CommonTokenStream(lexer)
     parser = SlangParser(tokenStream)
@@ -39,20 +39,18 @@ def main():
 
     # create abstract tree with own classes
     print("\n------ Abstract Tree ------")
-    p = getProg(progContext)
-    p.print()
+    mainctx = getProg(progContext)
+    print(mainctx)
 
-
-    print("\n------ Flatten ------")
-    p.lines = flatten(p.lines)
-    p.print()
+    #print("\n------ Flatten ------")
+    mainctx = flatten(mainctx)
+    #print(mainctx)
 
 
     print("\n------ Assembly ------")
-    var, asm = toGBA(p.lines)
-    asmText = asmPrinter(var, asm)
+    con = GBAconverter(mainctx)
+    asmText = con.asmPrinter()
     print(asmText)
-
 
     with open(OUTFILE, "w", encoding="UTF-8") as oFile:
         oFile.write(asmText)

@@ -3,10 +3,10 @@ from antlr4.tree.Tree import TerminalNodeImpl, Token
 from abstractTree import *
 
 class Evaluator():
-    def __init__(self, prog:Prog):
+    def __init__(self, prog:Context):
         prog.print()
         self.c = {}
-        for ass in prog.lines:
+        for ass in prog.elements:
             if type(ass)!=Assignment: continue #skip function calls #TODO change this once actual functions have been implemented
             res = self.eval(ass.value)
             self.c[ass.target] = res
