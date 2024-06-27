@@ -1,18 +1,22 @@
-_ = clearTilemap()
+# _ = clearTilemap()
 
-coord = 3
-a = 1==1
-b = False
+tile = 25
+x = 5
+y = 4
+xWidth = 6
+yWidth = 10
 
-func() {
-    _ = setTile(1, coord, coord)
+rect() {
+    # draws a rect at x, y with xWidth and yWidth
+    xC = 0
+    while (xC != xWidth) {
+        yC = 0
+        while (yC != yWidth) {
+            _ = setTile(tile, (xC + x), (yC + y))
+            yC = yC + 1
+        }
+        xC = xC + 1
+    }
 }
 
-if (a) {
-    coord = 1
-    _ = func()
-}
-if (b) {
-    coord = 2
-    _ = func()
-}
+_ = rect()

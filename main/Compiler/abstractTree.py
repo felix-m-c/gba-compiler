@@ -310,9 +310,6 @@ class BoolExpression(Exp):
 
         #try to resolve constant/known values stuff
         self.value = None
-        if self.left.value!=None and self.right.value!=None:
-            val = self.op(self.left.value, self.right.value)
-            self.value = 1 if val else 0
     def __repr__(self):
         if not self.value is None:
             return f"{self.name}({self.left} {self.opStr} {self.right} = {self.value})"
@@ -329,6 +326,14 @@ class Equals(BoolExpression):
         self.type = SlangParser.EqualsContext
         self.gba = None
         super().__init__(left, right)
+        self.smartEval()
+    def smartEval(self):
+        if self.left.value!=None and self.right.value!=None:
+            val = self.left.value == self.right.value
+            self.value = 1 if val else 0
+        if isinstance(self.left, IDENT) and isinstance(self.right, IDENT):
+            if self.left.name == self.right.name:
+                self.value = 1
 
 def getNotEquals(expression:SlangParser.NotEqualsContext):
     assert isinstance(expression, SlangParser.NotEqualsContext)
@@ -341,6 +346,14 @@ class NotEquals(BoolExpression):
         self.type = SlangParser.NotEqualsContext
         self.gba = None
         super().__init__(left, right)
+        self.smartEval()
+    def smartEval(self):
+        if self.left.value!=None and self.right.value!=None:
+            val = self.left.value != self.right.value
+            self.value = 1 if val else 0
+        if isinstance(self.left, IDENT) and isinstance(self.right, IDENT):
+            if self.left.name != self.right.name:
+                self.value = 1
 
 def getFunctionDecl(decl:SlangParser.FunctionDeclContext):
     assert isinstance(decl, SlangParser.FunctionDeclContext)

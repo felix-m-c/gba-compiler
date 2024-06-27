@@ -3,6 +3,16 @@ from antlr4.tree.Tree import TerminalNodeImpl, Token
 from abstractTree import *
 from flatten import getTempName
 
+"""
+add SP, -1      # platz machen
+ld a, 10        # wert in a laden
+ld HL, SP+0     # neuen stack pointer nach HL laden
+ld (HL), a      # a nach (HL) auf dem stack speichern
+
+außerdem: symbol table nachschlagen
+"""
+
+
 REGISTERS = ['a', 'c', 'b', 'e', 'd']
 
 class GBAconverter():
@@ -127,22 +137,22 @@ class GBAconverter():
         # we can ignore params for now, because everything is global anyways
         # #TODO move params onto stack
 
-    def conditionalJump(self, exp:BoolExpression, target:str):
+    def conditionalSkip(self, exp:BoolExpression, target:str):
         if isinstance(exp, Equals):
             self.loadValue(exp.right, "b")
             self.loadValue(exp.left, "a")
             self.asm.append(["cp", "b"])
-            self.asm.append(["jr", "nz", target])
+            self.asm.append(["jr", "nz", target])  #skip block if equal
         elif isinstance(exp, NotEquals):
             self.loadValue(exp.right, "b")
             self.loadValue(exp.left, "a")
             self.asm.append(["cp", "b"])
-            self.asm.append(["jr", "z", target])
+            self.asm.append(["jr", "z", target])  #skip block if not equal
         elif isinstance(exp, IDENT):
             self.loadValue(exp, "b")
             self.loadValue(INT(1), "a")
             self.asm.append(["cp", "b"])
-            self.asm.append(["jr", "nz", target]) #skip block if not equal
+            self.asm.append(["jr", "nz", target])
         else:
             raise NotImplementedError(f"expression '{type(exp)}' not implemented for jumps")
 
@@ -153,14 +163,14 @@ class GBAconverter():
         end = getTempName()
 
         self.asm.append([f"{start}:"])           # start:
-        self.conditionalJump(whileLoop.exp, end) # if (exp) goto end
+        self.conditionalSkip(whileLoop.exp, end) # if (exp) goto end
         self.convertContext(whileLoop.context)   # content...
         self.asm.append(["jp", start])           # goto start
         self.asm.append([f"{end}:"])             # end
 
     def convertIfStatement(self, ifStatement:IfStatement):
         end = getTempName()
-        self.conditionalJump(ifStatement.exp, end) # if (exp) goto end
+        self.conditionalSkip(ifStatement.exp, end) # if (exp) goto end
         self.convertContext(ifStatement.context)   # content...
         self.asm.append([f"{end}:"])             # end
 

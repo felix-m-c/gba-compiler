@@ -68,7 +68,7 @@ ident   : GLOBAL? IDENT;
 GLOBAL  : 'global';
 IDENT   : [a-zA-Z]+|'_';
 comment : COMM;
-COMM    : '#'[#a-zA-Z0-9 +\-*/=%&"()]+;
+COMM    : '#'[_,#a-zA-Z0-9 +\-*/=%&"()]+;
 newline : NEWLINE;
 NEWLINE : [\r\n]+;
 ws      : WS;
