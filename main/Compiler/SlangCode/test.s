@@ -30,3 +30,5 @@ if (a==5) {
     # interesting
     _ = clearTilemap() # inline comment
 }
+
+x = a==a

@@ -2,8 +2,8 @@ main:
 	java -jar ../antlr4_13_1.jar -Dlanguage="Python3" -visitor -o out Slang.g4
 
 test:
-	python3 compiler.py SlangCode/testLine.s code.asm
-	ln -f code.asm ../Assembler/build/main.asm
+	python3 compiler.py SlangCode/testLine.s out/code.asm
+	ln -f out/code.asm ../Assembler/build/main.asm
 	scripts/assembler.sh
 	scripts/runEmu.sh
 
@@ -17,9 +17,9 @@ clean:
 	rm -f out/*.interp
 	rm -f out/*.java
 	rm -f out/*.class
+	rm -f out/*.asm
 	rm -f Slang*.interp
 	rm -f Slang*.tokens
 	rm -f Slang*.java
 	rm -f Slang*.class
-	rm -f code.asm
 	scripts/cleanAssembler.sh
