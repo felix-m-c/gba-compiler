@@ -1,10 +1,5 @@
-a = 36
-_ = printByte a
-a = 64
-_ = printByte a
-a = 41
-_ = printByte a
-a = 33
-_ = printByte a
-a = 75
-_ = printByte a
+x = True
+
+printByte((0^x))
+printByte((1^x))
+printByte((2^x))

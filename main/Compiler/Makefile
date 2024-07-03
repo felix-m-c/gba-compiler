@@ -1,11 +1,17 @@
 main:
 	java -jar ../antlr4_13_1.jar -Dlanguage="Python3" -visitor -o out Slang.g4
 
-test:
-	python3 compiler.py SlangCode/testLine.s out/code.asm
+run:
+	python3 compiler.py SlangCode/game1.s out/code.asm
 	ln -f out/code.asm ../Assembler/build/main.asm
 	scripts/assembler.sh
 	scripts/runEmu.sh
+
+test:
+	python3 compiler.py SlangCode/consoleTest.s out/code.asm
+	ln -f out/code.asm ../Assembler/build/main.asm
+	scripts/assembler.sh
+	scripts/runTest.sh
 
 tree:
 	java -jar ../antlr4_13_1.jar Slang.g4 -o out
