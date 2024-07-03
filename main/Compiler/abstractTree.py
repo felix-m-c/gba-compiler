@@ -3,7 +3,7 @@ from antlr4.tree.Tree import TerminalNodeImpl, ErrorNodeImpl
 
 """
     # Elements that are removed when building the AST
-    (prog) -> (context) -> Block
+    (prog) -> (context) -> ClosedBlock
     (brackets) -> Exp
 
     Assignment(target:IDENT, value:Exp)
@@ -24,7 +24,7 @@ from antlr4.tree.Tree import TerminalNodeImpl, ErrorNodeImpl
         INT(num)
         BOOL()
 
-    FunctionDeclaration(name:ident, lines:Block)
+    FunctionDeclaration(name:ident, lines:ClosedBlock)
 
     IfStatement(ex:BooleanExpression)
 
@@ -32,6 +32,8 @@ from antlr4.tree.Tree import TerminalNodeImpl, ErrorNodeImpl
 
     WhileLoop
 """
+TAB = "  "
+
 
 def rprint(obj):
     if isinstance(obj, TerminalNodeImpl):
@@ -61,8 +63,8 @@ def getINT(s_int:SlangParser.S_intContext):
 class INT(Exp):
     def __init__(self, value:int):
         self.value = value  
-    def __repr__(self):
-        return f"INT({self.value})"
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}INT({self.value})"
 
 def getBOOL(s_bool:SlangParser.S_boolContext):
     assert isinstance(s_bool, SlangParser.S_boolContext)
@@ -79,8 +81,8 @@ class BOOL(Exp):
     def __init__(self, value:bool):
         assert isinstance(value, bool)
         self.value = int(value) #to 0/1
-    def __repr__(self):
-        return f"BOOL({self.value})"
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}BOOL({self.value})"
 
 def getIDENT(ident:SlangParser.IdentContext):
     assert isinstance(ident, SlangParser.IdentContext)
@@ -89,10 +91,11 @@ def getIDENT(ident:SlangParser.IdentContext):
     else:
         return IDENT(ident.children[0].getText())
 class IDENT(Exp):
-    def __init__(self, name, isGlobal=False):
+    def __init__(self, name, size=2, isGlobal=False):
         self.name = name
         self.value = None
         self.isGlobal = isGlobal
+        self.size = size
     
     def __hash__(self):
         return hash(self.name)
@@ -101,8 +104,8 @@ class IDENT(Exp):
         if type(other)!=type(self): return False
         return self.__hash__()==other.__hash__()
 
-    def __repr__(self):
-        return f"{'GLOB:' if self.isGlobal else ''}ID({self.name})"
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}{'GLOB:' if self.isGlobal else ''}ID({self.name})"
 
 def getAssignment(assignment:SlangParser.AssignmentContext):
     assert isinstance(assignment, SlangParser.AssignmentContext)
@@ -118,17 +121,17 @@ class Assignment():
         self.target = target
         self.value = value
     
-    def __repr__(self):
-        return f"ASS({self.target} = {self.value})"
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}ASS({self.target} = {self.value})"
 
 def getProg(prog:SlangParser.ProgContext):
     assert isinstance(prog, SlangParser.ProgContext)
-    return getContext(prog.children[0])
+    return getBlock(prog.children[0])
 
-def getContext(context:SlangParser.ContextContext):
-    assert type(context)==SlangParser.ContextContext
+def getBlock(block:SlangParser.BlockContext):
+    assert type(block)==SlangParser.BlockContext
     elements = []
-    for child in context.children:
+    for child in block.children:
         match type(child).__name__:
             case "LineContext":
                 l = getLine(child)
@@ -140,13 +143,13 @@ def getContext(context:SlangParser.ContextContext):
             case "NewlineContext":
                 pass #ignore newlines
             case _:
-                raise NotImplementedError(f"unknown element in context: {type(child)}, '{child.getText()}'")
-    return Context(elements)
-class Context():
+                raise NotImplementedError(f"unknown element in block: {type(child)}, '{child.getText()}'")
+    return Block(elements)
+class Block():
     def __init__(self, elements):
         self.elements = elements
-    def __repr__(self):
-        return 'CTX{'+f"\n{'\n'.join(x.__repr__() for x in self.elements)}\n"+'}'
+    def __repr__(self, indent=0):
+        return 'BLOCK{'+f"\n{'\n'.join(x.__repr__(indent=indent+1) for x in self.elements)}\n"+TAB*indent+'}'
 
 def getLine(line:SlangParser.LineContext):
     assert isinstance(line, SlangParser.LineContext)
@@ -162,15 +165,32 @@ def getLine(line:SlangParser.LineContext):
             return getWhileLoop(elem)
         case "CommentContext":
             return None # no representation in the AST
+        case "ReturnStatementContext":
+            return getReturnStatement(elem)
+        case "FunctionCallContext":
+            return getFunctionCall(elem)
         case _:
-            raise NotImplementedError(f"unknown element in Line: {type(child)}, '{child.getText()}'")
+            raise NotImplementedError(f"unknown element in Line: {type(elem)}, '{elem.getText()}'")
 
-def getBlock(block:SlangParser.BlockContext):
-    assert isinstance(block, SlangParser.BlockContext)
-    for c in block.children: #search the single context inside the block (might have newlines etc around it)
-        if type(c)==SlangParser.ContextContext:
-            return getContext(c)
-    return Context([])
+def getReturnStatement(statement:SlangParser.ReturnStatementContext):
+    assert isinstance(statement, SlangParser.ReturnStatementContext)
+    params = statement.children[1:-1]
+    exp = None
+    if params != []:
+        exp = getExpression(statement.children[1])
+    return ReturnStatement(exp)
+class ReturnStatement():
+    def __init__(self, exp:Exp):
+        self.exp = exp
+    def __repr__(self, indent=0): #jesus this is weird code
+        return f"{TAB*indent}RETURN({self.exp.__repr__()})"
+
+def getClosedBlock(closedBlock:SlangParser.ClosedBlockContext):
+    assert isinstance(closedBlock, SlangParser.ClosedBlockContext)
+    for c in closedBlock.children: #search the single block inside the closedBlock (might have newlines etc around it)
+        if type(c)==SlangParser.BlockContext:
+            return getBlock(c)
+    return Block([])
 
 def getFunctionCall(ctx:SlangParser.FunctionCallContext):
     name = None
@@ -187,8 +207,8 @@ class FunctionCall(Exp):
         self.name = name
         self.params = params
         self.value = None
-    def __repr__(self): #jesus this is weird code
-        return f"FUN_{self.name}({','.join(x.__repr__() for x in self.params)})"
+    def __repr__(self, indent=0): #jesus this is weird code
+        return f"{TAB*indent}FUN_{self.name}({','.join(x.__repr__() for x in self.params)})"
 
 def getBrackets(brackets:SlangParser.BracketsContext):
     child = brackets.children[1]
@@ -211,6 +231,7 @@ def getExpression(expression:SlangParser.ExpressionContext):
     if not ex.value is None:
         return INT(ex.value)
     return ex
+
 def getArithmeticExp(exp):
     if isinstance(exp, SlangParser.ArithmeticExpressionContext):
         exp = exp.children[0]
@@ -225,7 +246,6 @@ def getArithmeticExp(exp):
             return getDivision(exp)
         case _:
             raise NotImplementedError(f"not a known arithmetic expression: {type(exp)}")
-
 class ArithmeticExp(Exp):
     def __init__(self, left, right):
         self.left = left
@@ -235,10 +255,10 @@ class ArithmeticExp(Exp):
         self.value = None
         if self.left.value!=None and self.right.value!=None:
             self.value = self.op(self.left.value, self.right.value)
-    def __repr__(self):
+    def __repr__(self, indent=0):
         if not self.value is None:
-            return f"{self.name}({self.left} {self.opStr} {self.right} = {self.value})"
-        return f"{self.name}({self.left} {self.opStr} {self.right})"
+            return f"{TAB*indent}{self.name}({self.left} {self.opStr} {self.right} = {self.value})"
+        return f"{TAB*indent}{self.name}({self.left} {self.opStr} {self.right})"
 
 def getAddition(expression:SlangParser.AdditionContext):
     assert isinstance(expression, SlangParser.AdditionContext)
@@ -293,14 +313,20 @@ def getBoolExpression(exp):
     if isinstance(exp, SlangParser.BoolExpressionContext):
         exp = exp.children[0]
     match type(exp):
-        case SlangParser.EqualsContext:
+        case SlangParser.Equals_opContext:
             return getEquals(exp)
-        case SlangParser.NotEqualsContext:
+        case SlangParser.NotEquals_opContext:
             return getNotEquals(exp)
         case SlangParser.S_boolContext:
             return getBOOL(exp)
         case SlangParser.IdentContext:
             return getIDENT(exp)
+        case SlangParser.And_opContext:
+            return getAnd(exp)
+        case SlangParser.Or_opContext:
+            return getOr(exp)
+        case SlangParser.Xor_opContext:
+            return getXor(exp)
         case _:
             raise NotImplementedError(f"not a known boolean expression: {type(exp)}")
 class BoolExpression(Exp):
@@ -310,20 +336,20 @@ class BoolExpression(Exp):
 
         #try to resolve constant/known values stuff
         self.value = None
-    def __repr__(self):
+    def __repr__(self, indent=0):
         if not self.value is None:
-            return f"{self.name}({self.left} {self.opStr} {self.right} = {self.value})"
-        return f"{self.name}({self.left} {self.opStr} {self.right})"
+            return f"{TAB*indent}{self.name}({self.left} {self.opStr} {self.right} = {self.value})"
+        return f"{TAB*indent}{self.name}({self.left} {self.opStr} {self.right})"
 
-def getEquals(expression:SlangParser.EqualsContext):
-    assert isinstance(expression, SlangParser.EqualsContext)
+def getEquals(expression:SlangParser.Equals_opContext):
+    assert isinstance(expression, SlangParser.Equals_opContext)
     return Equals(getValue(expression.children[0]), getValue(expression.children[2]))
 class Equals(BoolExpression):
     def __init__(self, left, right):
         self.name = "EQ"
         self.op = int.__eq__
         self.opStr = "=="
-        self.type = SlangParser.EqualsContext
+        self.type = SlangParser.Equals_opContext
         self.gba = None
         super().__init__(left, right)
         self.smartEval()
@@ -335,15 +361,15 @@ class Equals(BoolExpression):
             if self.left.name == self.right.name:
                 self.value = 1
 
-def getNotEquals(expression:SlangParser.NotEqualsContext):
-    assert isinstance(expression, SlangParser.NotEqualsContext)
+def getNotEquals(expression:SlangParser.NotEquals_opContext):
+    assert isinstance(expression, SlangParser.NotEquals_opContext)
     return NotEquals(getValue(expression.children[0]), getValue(expression.children[2]))
 class NotEquals(BoolExpression):
     def __init__(self, left, right):
         self.name = "NEQ"
         self.op = lambda a, b: not int.__eq__(a, b)
         self.opStr = "!="
-        self.type = SlangParser.NotEqualsContext
+        self.type = SlangParser.NotEquals_opContext
         self.gba = None
         super().__init__(left, right)
         self.smartEval()
@@ -355,52 +381,122 @@ class NotEquals(BoolExpression):
             if self.left.name != self.right.name:
                 self.value = 1
 
+def getAnd(exp:SlangParser.And_opContext):
+    assert isinstance(exp, SlangParser.And_opContext)
+    return AndOp(getValue(exp.children[0]), getValue(exp.children[2]))
+class AndOp(BoolExpression):
+    def __init__(self, left, right):
+        self.name = "AND"
+        self.op = lambda a, b: int.__and__(a, b)
+        self.opStr = "&"
+        self.type = SlangParser.And_opContext
+        self.gba = "and"
+        super().__init__(left, right)
+        #print(f"AndOp Value: {self.value}")
+        self.smartEval()
+        #print(f"AndOp smart Value: {self.value}")
+    def smartEval(self):
+        if self.left.value!=None and self.right.value!=None:
+            val = self.left.value & self.right.value
+            self.value = int(val)
+        if isinstance(self.left, IDENT) and isinstance(self.right, IDENT):
+            if self.left.name == self.right.name:
+                self.value = 0
+
+def getOr(exp:SlangParser.Or_opContext):
+    assert isinstance(exp, SlangParser.Or_opContext)
+    return OrOp(getValue(exp.children[0]), getValue(exp.children[2]))
+class OrOp(BoolExpression):
+    def __init__(self, left, right):
+        self.name = "OR"
+        self.op = lambda a, b: int.__or__(a, b)
+        self.opStr = "||"
+        self.type = SlangParser.Or_opContext
+        self.gba = "or"
+        super().__init__(left, right)
+        #print(f"OrOp Value: {self.value}")
+        self.smartEval()
+        #print(f"OrOp smart Value: {self.value}")
+    def smartEval(self):
+        if self.left.value!=None and self.right.value!=None:
+            if self.left.value == self.right.value:
+                self.value = self.left.value
+
+def getXor(exp:SlangParser.Xor_opContext):
+    assert isinstance(exp, SlangParser.Xor_opContext)
+    return XorOp(getValue(exp.children[0]), getValue(exp.children[2]))
+class XorOp(BoolExpression):
+    def __init__(self, left, right):
+        self.name = "XOR"
+        self.op = lambda a, b: int.__xor__(a, b)
+        self.opStr = "^"
+        self.type = SlangParser.Xor_opContext
+        self.gba = "xor"
+        super().__init__(left, right)
+        #print(f"XorOp Value: {self.value}")
+        self.smartEval()
+        #print(f"XorOp smart Value: {self.value}")
+    def smartEval(self):
+        if self.left.value!=None and self.right.value!=None:
+            if self.left.value==self.right.value:
+                self.value = 0
+        if isinstance(self.left, IDENT) and isinstance(self.right, IDENT):
+            if self.left.name == self.right.name:
+                self.value = 0
+
+def getIdentList(identList:SlangParser.IdentListContext):
+    children = identList.children[1:-1] #remove first and last element '(' and ')'
+    return [getIDENT(c) for c in children]
+
 def getFunctionDecl(decl:SlangParser.FunctionDeclContext):
     assert isinstance(decl, SlangParser.FunctionDeclContext)
     children = decl.children
-    ident = getIDENT(children[0])
-    context = getBlock(children[-1])
-    params = [getValue(x) for x in children[2:-2]]
-    return FunctionDecl(ident, params, context)
+
+    ident = getIDENT(children[1])
+    identList = getIdentList(children[2])
+    block = getClosedBlock(children[3])
+    return FunctionDecl(ident, identList, block)
 class FunctionDecl():
-    def __init__(self, ident:IDENT, params:list, context:Context):
+    def __init__(self, ident:IDENT, params:list, block:Block):
         self.name = ident.name
         self.params = params
-        self.context = context
-    def __repr__(self):
-        return f"FUNC[{self.name}]({', '.join([x.__repr__() for x in self.params])})({self.context})"
+        self.block = block
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}FUNC[{self.name}]({', '.join([x.__repr__() for x in self.params])})({self.block.__repr__(indent=indent)})"
 
 def getWhileLoop(loop:SlangParser.WhileLoopContext):
     assert isinstance(loop, SlangParser.WhileLoopContext)
-    boolExp, ctx = None, None
+    boolExp, block = None, None
     for el in loop.children:
         if isinstance(el, SlangParser.BoolExpressionContext):
             boolExp = getBoolExpression(el)
-        elif isinstance(el, SlangParser.BlockContext):
-            ctx = getBlock(el)
+        elif isinstance(el, SlangParser.ClosedBlockContext):
+            block = getClosedBlock(el)
         else:
             #print(f"ignored {type(el)} in while loop")
             pass
-    return WhileLoop(boolExp, ctx)
+    if block is None:
+        raise Exception(f"block in whileloop is None")
+    return WhileLoop(boolExp, block)
 class WhileLoop():
-    def __init__(self, exp:BoolExpression, context:Context):
+    def __init__(self, exp:BoolExpression, block:Block):
         self.exp = exp
-        self.context = context
-    def __repr__(self):
-        return f"WHILE ({self.exp}) {self.context}"
+        self.block = block
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}WHILE ({self.exp}) {self.block.__repr__(indent=indent+1)}"
     
 def getIfStatement(statement:SlangParser.IfStatementContext):
     assert isinstance(statement, SlangParser.IfStatementContext)
-    boolExp, ctx = None, None
+    boolExp, block = None, None
     for el in statement.children:
         if isinstance(el, SlangParser.BoolExpressionContext):
             boolExp = getBoolExpression(el)
-        if isinstance(el, SlangParser.BlockContext):
-            ctx = getBlock(el)
-    return IfStatement(boolExp, ctx)
+        if isinstance(el, SlangParser.ClosedBlockContext):
+            block = getClosedBlock(el)
+    return IfStatement(boolExp, block)
 class IfStatement():
-    def __init__(self, exp:BoolExpression, context:Context):
+    def __init__(self, exp:BoolExpression, block:Block):
         self.exp = exp
-        self.context = context
-    def __repr__(self):
-        return f"IF ({self.exp}) {self.context}"
+        self.block = block
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}IF ({self.exp}) {self.block.__repr__(indent=indent)}"

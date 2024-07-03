@@ -8,9 +8,9 @@ from out.SlangParser import SlangParser
 from out.SlangVisitor import SlangVisitor
 
 from abstractTree import getProg
-from attributes import Evaluator
-from flatten import flatten
-from gba import GBAconverter
+from flatten import flattenBlock
+#from gba import GBAconverter
+from gba import buildMain
 
 if len(sys.argv)!=3:
     print("usage: python3 compiler.py <InPath> <OutPath>")
@@ -39,17 +39,18 @@ def main():
 
     # create abstract tree with own classes
     print("\n------ Abstract Tree ------")
-    mainctx = getProg(progContext)
-    print(mainctx)
+    mainBlock = getProg(progContext)
+    print(mainBlock)
 
-    #print("\n------ Flatten ------")
-    mainctx = flatten(mainctx)
-    #print(mainctx)
+    print("\n------ Flatten ------")
+    mainBlock = flattenBlock(mainBlock)
+    print(mainBlock)
 
+    #return    
 
     print("\n------ Assembly ------")
-    con = GBAconverter(mainctx)
-    asmText = con.asmPrinter()
+    asmText = buildMain(mainBlock)
+    print("-"*20)
     print(asmText)
 
     with open(OUTFILE, "w", encoding="UTF-8") as oFile:

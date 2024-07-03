@@ -3,23 +3,28 @@ options {
     language = Python3;
 }
 
-prog:   context EOF;
+prog:   block EOF;
 
-block: '{' newline? ws? context ws? newline? '}';
+closedBlock: '{' newline? ws? block ws? newline? '}';
 
-context: newline? (line newline)* line? newline?;
+block: newline? (line newline)* line? newline?;
 
-functionDecl: ident ws? '(' ws? ')' ws? block;
+functionDecl: 'def' ws? ident ws? identList ws? closedBlock;
+identList: '(' ws? (ident ws? ',' ws?)* ident? ws? ')';
 
 line: ws? assignment ws? comment?
     | ws? comment
     | ws? functionDecl ws? comment?
     | ws? whileLoop ws? comment?
     | ws? ifStatement ws? comment?
+    | ws? returnStatement ws? comment?
+    | ws? functionCall ws? comment?
     ;
 
-whileLoop: 'while' ws? '(' ws? boolExpression ws? ')' ws? block;
-ifStatement: 'if' ws? '(' ws? boolExpression ws? ')' ws? block;
+whileLoop: 'while' ws? '(' ws? boolExpression ws? ')' ws? closedBlock;
+ifStatement: 'if' ws? '(' ws? boolExpression ws? ')' ws? closedBlock;
+
+returnStatement: 'return(' ws? expression? ws? ')';
 
 assignment:   ident ws? '=' ws? expression;
 
@@ -31,10 +36,13 @@ expression
     ;
 
 boolExpression
-    : equals
-    | notEquals
+    : s_bool
     | ident
-    | s_bool
+    | equals_op
+    | notEquals_op
+    | and_op
+    | xor_op
+    | or_op
     ;
 
 arithmeticExpression
@@ -46,8 +54,12 @@ arithmeticExpression
 
 brackets    :   '(' ws? expression ws? ')';
 
-equals      :   value ws? '==' ws? value;
-notEquals   :   value ws? '!=' ws? value;
+equals_op   :   value ws? '==' ws? value;
+notEquals_op:   value ws? '!=' ws? value;
+and_op      :   value ws? '&' ws? value;
+xor_op      :   value ws? '^' ws? value;
+or_op       :   value ws? '|' ws? value;
+
 addition    :   value ws? '+' ws? value;
 subtraction :   value ws? '-' ws? value;
 multiplication: value ws? '*' ws? value;
@@ -71,9 +83,9 @@ s_bool  : BOOL;
 BOOL    : 'True'|'False';
 ident   : GLOBAL? IDENT;
 GLOBAL  : 'global';
-IDENT   : [a-zA-Z]+|'_';
+IDENT   : [a-zA-Z][a-zA-Z_]*|'_';
 comment : COMM;
-COMM    : '#'[_,#a-zA-Z0-9 +\-*/=%&"()]+;
+COMM    : '#'[_,#a-zA-Z0-9 +\-*^/=%&<>"()]+;
 newline : NEWLINE;
 NEWLINE : [\r\n]+;
 ws      : WS;
