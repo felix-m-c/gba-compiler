@@ -4,7 +4,7 @@ from abstractTree import *
 from flatten import getTempName
 from dataclasses import dataclass
 
-DEBUG = False
+DEBUG = True
 
 """
 add SP, -1      # platz machen
@@ -16,12 +16,14 @@ außerdem: symbol table nachschlagen
 """
 
 
-REGISTERS = ['a', 'c', 'b', 'e', 'd']
-
+REGISTER_ORDER = ['a', 'c', 'b', 'e', 'd']
+REGISTER_16_ORDER = ['hl', 'de', 'bc']
+REGISTERS = ['a', 'c', 'b', 'e', 'd', 'hl', 'de', 'bc']
 
 class GlobalManager():
     def __init__(self):
         self.globalVars:dict[str,IDENT] = {} #name:var
+        self.arrays:list[Bytearray] = []
     
     def add(self, newVar:IDENT):
         if newVar.name in self.globalVars.keys():
@@ -30,9 +32,17 @@ class GlobalManager():
                 raise RuntimeError(f"global var {newVar.name} was already defined with size {oldSize}, not {newVar.size}")
         else:
             self.globalVars[newVar.name] = newVar
-        
+    
+    def addArray(self, byteArray:Bytearray):
+        assert isinstance(byteArray, Bytearray)
+        if byteArray.name in [x.name for x in self.arrays]:
+            raise RuntimeError(f"global array with name '{byteArray.name}' already exists")
+        self.arrays.append(byteArray)
+
     def exists(self, var:IDENT):
         if var.name in self.globalVars.keys():
+            return True
+        if var.name in [x.name.name for x in self.arrays]:
             return True
         return False
 
@@ -116,9 +126,13 @@ class ContextManager():
         return f"{self.name}[\n  {'\n  '.join(ret)}\n]"
 
 def globalPrinter(globalManager:GlobalManager):
-    pre = [
+    preRam = [
         ";;globals\n",
         ".ramsection \"Definitions\" slot 1"
+    ]
+    preArrays = [
+        ";;arrays\n",
+        ".section \"arrays\""
     ]
     post = [
         ".ends"
@@ -127,7 +141,14 @@ def globalPrinter(globalManager:GlobalManager):
     indent = 1
     for v in globalManager.globalVars:
         out.append(f"{'  '*indent}{v} db ; uint8 {v};")
-    full = pre+out+post
+    
+    arrays = []
+    for a in globalManager.arrays:
+        arrays.append(f"{a.name.name}:")
+        for el in a.byteList:
+            val = "%"+"{0:b}".format(el.value).zfill(8)
+            arrays.append(f"{'  '*indent}.db {val}")
+    full = preRam+out+post+preArrays+arrays+post
     return "\n".join(full)
 
 def functionsPrinter(globalManager:GlobalManager, functions:list[FunctionDecl]):
@@ -145,7 +166,7 @@ def functionsPrinter(globalManager:GlobalManager, functions:list[FunctionDecl]):
         asm.append([f"{name}:"])
         for i in range(len(f.params)-1, -1, -1): #do backwards to set register a last
             p = f.params[i]
-            r = REGISTERS[i]
+            r = REGISTER_ORDER[i]
             asm.extend(saveRegtoVar(p, ctx, r))
         # create block
         blockAsm, newFuncs = buildBlock(f.block, startContext=ctx, name="main")
@@ -189,7 +210,7 @@ def buildMain(block:Block)->list:
 
 def saveRegtoVar(var:IDENT, ctx:ContextManager, register="a"):
     reg = register.lower()
-    if reg not in REGISTERS:
+    if reg not in REGISTER_ORDER:
         raise RuntimeError(f"register '{register}' does not exist")
     """
     saves register 'reg' into var
@@ -227,12 +248,17 @@ def functionCall(call:FunctionCall, ctx)->list:
     name = call.name
     params = call.params
     if DEBUG: print(f"call {name}({params})")
-    if len(params)>len(REGISTERS):
-        raise NotImplementedError(f"tried to call function with too many parameters: {len(params)} (max: {len(REGISTERS)})")
-    
+    if len(params)>len(REGISTER_ORDER):
+        raise NotImplementedError(f"tried to call function with too many parameters: {len(params)} (max: {len(REGISTER_ORDER)})")
+
+    if name in ["loadTiles1bpp", "setTiles"]:
+        print(params)
+        asm.append(["ld", "hl", f"{params[0].name}"])
+        params = params[1:]
+
     for i in range(len(params)-1, -1, -1): #do backwards to set register a last
         p = params[i]
-        r = REGISTERS[i]
+        r = REGISTER_ORDER[i]
         asm.extend(loadValue(p, ctx, r))
     asm.append(["call", f"{name}"])
     
@@ -429,6 +455,8 @@ def buildBlock(block:Block, parentCtx=None, startContext=None, name="?")->list:
                 asm.append(["ret"])
             case "FunctionCall":
                 asm.extend(loadValue(elem, ctx))
+            case "Bytearray":
+                ctx.globalManager.addArray(elem)
             case _:
                 raise NotImplementedError(f"unknown element of type '{type(elem)}' in context ({ctx.name})")
         asm.append([]) #add empty line

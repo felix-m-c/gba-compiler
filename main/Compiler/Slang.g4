@@ -19,6 +19,7 @@ line: ws? assignment ws? comment?
     | ws? ifStatement ws? comment?
     | ws? returnStatement ws? comment?
     | ws? functionCall ws? comment?
+    | ws? byteArray ws? comment?
     ;
 
 whileLoop: 'while' ws? '(' ws? boolExpression ws? ')' ws? closedBlock;
@@ -76,16 +77,22 @@ functionCall
     :   ident ws? '(' ws? (value ',' ws?)* value ws? ')'
     |   ident ws? '(' ws? (value ',' ws?)* ws? ')'
     ;
+    
+byteArray: 'bytes' ws? ident newline? ws? '[' newline? ws? byteList newline? ws? ']';
+byteList:  (ws? s_int ',' newline?)+ ws? s_int;
 
 s_int   : INT;
-INT     : [0-9]+ ;
+INT     : [0-9]+
+        | '0x'[0-9a-e]+
+        | '0b'[01]+
+        ;
 s_bool  : BOOL;
 BOOL    : 'True'|'False';
 ident   : GLOBAL? IDENT;
 GLOBAL  : 'global';
-IDENT   : [a-zA-Z][a-zA-Z_]*|'_';
+IDENT   : [a-zA-Z][a-zA-Z_0-9]*|'_';
 comment : COMM;
-COMM    : '#'[_,#a-zA-Z0-9 +\-*^/=%&<>"()]+;
+COMM    : '#'[_.,#a-zA-Z0-9 +\-*^/=%&<>:;"()]+;
 newline : NEWLINE;
 NEWLINE : [\r\n]+;
 ws      : WS;

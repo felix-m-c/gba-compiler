@@ -9,9 +9,9 @@ def getTempName():
     return f"temp_{uuid.uuid4().hex[:6]}"
 
 def flattenExp(exp):
-    print(f"  exp: {exp}")
-    if type(exp) in [INT, BOOL, IDENT]:
-        print(f"    ignoring {exp}")
+    if DEBUG: print(f"  exp: {exp}")
+    if type(exp) in [INT, BOOL, IDENT, Bytearray]:
+        if DEBUG: print(f"    ignoring {exp}")
         return [], exp
     elif isinstance(exp, FunctionCall):
         newElements = []
@@ -22,7 +22,7 @@ def flattenExp(exp):
             idents.append(ident)
         return newElements, FunctionCall(exp.name, idents)
     else:
-        print(f"   working {exp}")
+        if DEBUG: print(f"   working {exp}")
         el = []
         targetIdent = IDENT(getTempName())
 
@@ -65,6 +65,8 @@ def flattenBlock(block:Block):
             newElements.append(el)
         elif isinstance(el, WhileLoop):
             el.block = flattenBlock(el.block)
+            newElements.append(el)
+        elif isinstance(el, Bytearray):
             newElements.append(el)
         else:
             if DEBUG: print(f"skipping {el}")

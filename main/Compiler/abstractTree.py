@@ -59,7 +59,7 @@ def getValue(value:SlangParser.ValueContext):
 
 def getINT(s_int:SlangParser.S_intContext):
     assert isinstance(s_int, SlangParser.S_intContext)
-    return INT(int(s_int.getText()))
+    return INT(int(s_int.getText(), 0))
 class INT(Exp):
     def __init__(self, value:int):
         self.value = value  
@@ -169,8 +169,39 @@ def getLine(line:SlangParser.LineContext):
             return getReturnStatement(elem)
         case "FunctionCallContext":
             return getFunctionCall(elem)
+        case "ByteArrayContext":
+            return getByteArray(elem)
         case _:
             raise NotImplementedError(f"unknown element in Line: {type(elem)}, '{elem.getText()}'")
+
+def getByteArray(byteArray:SlangParser.ByteArrayContext):
+    assert isinstance(byteArray, SlangParser.ByteArrayContext)
+    children = list(filter(lambda x: type(x) not in [TerminalNodeImpl, SlangParser.NewlineContext], byteArray.children))
+    ident = getIDENT(children[0])
+    byteList = getByteList(children[1])
+    return Bytearray(ident, byteList)
+class Bytearray():
+    def __init__(self, ident:IDENT, byteList:list):
+        self.name = ident
+        self.byteList = byteList
+        self.value = None
+    def __repr__(self, indent=0):
+        return f"{TAB*indent}BYTES({self.name})[{self.byteList}]"
+
+def getByteList(byteList:SlangParser.ByteListContext)->list[INT]:
+    assert isinstance(byteList, SlangParser.ByteListContext)
+    children = list(filter(lambda x: type(x) not in [TerminalNodeImpl, SlangParser.NewlineContext], byteList.children))
+    
+    byteList = []
+    for c in children:
+        if isinstance(c, SlangParser.S_intContext):
+            byteList.append(getINT(c))
+        elif isinstance(c, SlangParser.S_boolContext):
+            boo = getBOOL(c)
+            byteList.append(INT(c.value))
+        else:
+            raise NotImplementedError(f"cannot build byte from {type(c).__name__}")
+    return byteList
 
 def getReturnStatement(statement:SlangParser.ReturnStatementContext):
     assert isinstance(statement, SlangParser.ReturnStatementContext)
