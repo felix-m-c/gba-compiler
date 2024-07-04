@@ -8,7 +8,7 @@ from out.SlangParser import SlangParser
 from out.SlangVisitor import SlangVisitor
 
 from abstractTree import getProg
-from flatten import flattenBlock
+from transformAST import flattenBlock, optimizeBlock
 #from gba import GBAconverter
 from gba import buildMain
 
@@ -46,7 +46,10 @@ def main():
     mainBlock = flattenBlock(mainBlock)
     print(mainBlock)
 
-    #return    
+    # this does nothing right now
+    #print("\n------ Optimize AST ------")
+    #mainBlock = optimizeBlock(mainBlock)
+    #print(mainBlock)
 
     print("\n------ Assembly ------")
     asmText = buildMain(mainBlock)

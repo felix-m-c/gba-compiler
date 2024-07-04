@@ -1,10 +1,11 @@
 from out.SlangParser import SlangParser
 from antlr4.tree.Tree import TerminalNodeImpl, Token
 from abstractTree import *
-from flatten import getTempName
+from transformAST import getTempName
 from dataclasses import dataclass
+from optimize import optimizeAsm
 
-DEBUG = True
+DEBUG = False
 
 """
 add SP, -1      # platz machen
@@ -88,7 +89,7 @@ class ContextManager():
         return ContextManager(f"{self.name}_{nameExtension}", self.globalManager, parentContext=self, isFunctionContext=isFunctionContext)
 
     def getTotalSize(self):
-        print (f"size: {sum([v.size for v in self.vars])}")
+        #print (f"size: {sum([v.size for v in self.vars])}")
         return sum([v.size for v in self.vars])
 
     def removeFunctionFromStack(self)->list:
@@ -187,6 +188,7 @@ def functionsPrinter(globalManager:GlobalManager, functions:list[FunctionDecl]):
 
 def asmPrinter(asm:list, indent=2):
     out = []
+    asm = optimizeAsm(asm)
     for i in asm:
         #if DEBUG: print(f"line: {i}")
         if i==[]: out.append(""); continue #empty line
@@ -405,19 +407,34 @@ def buildWhile(whileLoop:WhileLoop, ctx:ContextManager)->list:
 
 def buildIf(ifStatement:IfStatement, ctx:ContextManager)->tuple[list, list]:
     asm = []
+    functions = []
     asm.append([f";; IF ({ifStatement.exp}) do"])
 
     if ifStatement.exp.value==0: #while (False)
         asm.append([f";; removed entire block because it is never executed"])
         return asm, []
     
-    end = getTempName()
-    asm.extend(buildSkipIfFalse(ifStatement.exp, end, ctx)) # if (exp) goto end
-    asmTemp, functions = buildBlock(ifStatement.block, parentCtx=ctx, name="if")         # build content
-    asm.extend(asmTemp)         # content...
-    asm.append([f"{end}:"]) # end
-    return asm, functions
+    hasElse = not ifStatement.elseBlock is None
 
+    endLabel = getTempName()
+    elseLabel = getTempName()
+
+    asm.extend(buildSkipIfFalse(ifStatement.exp, elseLabel, ctx)) # if (exp) goto end
+    asmTemp, funcTemp = buildBlock(ifStatement.block, parentCtx=ctx, name="if")         # build content
+    asm.extend(asmTemp)         # content...
+    functions.extend(funcTemp)
+    if hasElse: asm.append(["jp", f"{endLabel}"])
+
+    asm.append([f"{elseLabel}:"])
+
+    if hasElse:
+        asm.append([";; ELSE do"])
+        asmTemp, funcTemp = buildBlock(ifStatement.elseBlock, parentCtx=ctx, name="else")         # build content
+        asm.extend(asmTemp)         # content...
+        functions.extend(funcTemp)
+        asm.append([f"{endLabel}:"]) # end
+    
+    return asm, functions
 
 def buildBlock(block:Block, parentCtx=None, startContext=None, name="?")->list:
     asm = []

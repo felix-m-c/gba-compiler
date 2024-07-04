@@ -3,7 +3,7 @@ from antlr4.tree.Tree import TerminalNodeImpl, Token
 from abstractTree import *
 import uuid
 
-DEBUG = True
+DEBUG = False
 
 def getTempName():
     return f"temp_{uuid.uuid4().hex[:6]}"
@@ -62,6 +62,8 @@ def flattenBlock(block:Block):
             newElements.append(el)
         elif isinstance(el, IfStatement):
             el.block = flattenBlock(el.block)
+            if not el.elseBlock is None:
+                el.elseBlock = flattenBlock(el.elseBlock) 
             newElements.append(el)
         elif isinstance(el, WhileLoop):
             el.block = flattenBlock(el.block)
@@ -73,40 +75,6 @@ def flattenBlock(block:Block):
 
     block.elements = newElements
     return block
-    #if DEBUG: print("flatten:", type(block))
-    assert isinstance(block, Block)
-    newElements = []
-    for el in block.elements:
-        #if DEBUG: print(f"line: {type(el)}")
-        if isinstance(el, Assignment):
-            val = el.value
-            newNewElements, tVar = flat(val)
-            newElements += newNewElements
-            newElements.append(Assignment(el.target, tVar))
-        elif isinstance(el, FunctionCall):
-            newParams = []
-            for p in el.params:
-                newNewElements, newIdent = flat(p)
-                newElements.extend(newNewElements)
-                newParams.append(newIdent)
-            newElements.append(FunctionCall(el.name, newParams))
-        elif isinstance(el, ReturnStatement):
-            p = el.exp
-            newNewElements, newIdent = flat(p)
-            newElements += newNewElements
-            newElements.append(ReturnStatement(newIdent))
-        elif isinstance(el, FunctionDecl):
-            el.block = flatten(el.block)
-            newElements.append(el)
-        elif isinstance(el, IfStatement):
-            el.block = flatten(el.block)
-            flat(el.exp)
-            newElements.append(el)
-        elif isinstance(el, WhileLoop):
-            el.block = flatten(el.block)
-            newElements.append(el)
-        else:
-            newElements.append(el)
-    #if DEBUG: print("-"*5)
-    block.elements = newElements
+
+def optimizeBlock(block:Block):
     return block

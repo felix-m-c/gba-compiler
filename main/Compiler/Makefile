@@ -8,7 +8,7 @@ run:
 	scripts/runEmu.sh
 
 test:
-	python3 compiler.py SlangCode/consoleTest.s out/code.asm
+	python3 compiler.py SlangCode/testAll.s out/code.asm
 	ln -f out/code.asm ../Assembler/build/main.asm
 	scripts/assembler.sh
 	scripts/runTest.sh

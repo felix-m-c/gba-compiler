@@ -23,8 +23,8 @@ line: ws? assignment ws? comment?
     ;
 
 whileLoop: 'while' ws? '(' ws? boolExpression ws? ')' ws? closedBlock;
-ifStatement: 'if' ws? '(' ws? boolExpression ws? ')' ws? closedBlock;
-
+ifStatement: 'if' ws? '(' ws? boolExpression ws? ')' ws? closedBlock newline? ws? elseStatement?;
+elseStatement: 'else' ws? closedBlock;
 returnStatement: 'return(' ws? expression? ws? ')';
 
 assignment:   ident ws? '=' ws? expression;
