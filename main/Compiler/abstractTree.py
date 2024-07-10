@@ -298,6 +298,7 @@ class Addition(ArithmeticExp):
         self.opStr = "+"
         self.type = SlangParser.AdditionContext
         self.gba = "add"
+        self.func = None
         super().__init__(left, right)
 def getAddition(expression:SlangParser.AdditionContext)->Addition:
     assert isinstance(expression, SlangParser.AdditionContext)
@@ -310,6 +311,7 @@ class Subtraction(ArithmeticExp):
         self.opStr = "-"
         self.type = SlangParser.SubtractionContext
         self.gba = "sub"
+        self.func = None
         super().__init__(left, right)
 def getSubtraction(expression:SlangParser.SubtractionContext)->Subtraction:
     assert isinstance(expression, SlangParser.SubtractionContext)
@@ -323,6 +325,7 @@ class Multiplication(ArithmeticExp):
         self.opStr = "*"
         self.type = SlangParser.MultiplicationContext
         self.gba = None
+        self.func = "mul8"
         super().__init__(left, right)
 def getMultiplication(expression:SlangParser.MultiplicationContext)->Multiplication:
     assert isinstance(expression, SlangParser.MultiplicationContext)
@@ -335,6 +338,7 @@ class Division(ArithmeticExp):
         self.opStr = "/"
         self.type = SlangParser.DivisionContext
         self.gba = None
+        self.func = None
         super().__init__(left, right)
 def getDivision(expression:SlangParser.DivisionContext)->Division:
     assert isinstance(expression, SlangParser.DivisionContext)
@@ -379,6 +383,7 @@ class Equals(BoolExpression):
         self.opStr = "=="
         self.type = SlangParser.Equals_opContext
         self.gba = None
+        self.func = None
         super().__init__(left, right)
         self.smartEval()
     def smartEval(self):
@@ -399,6 +404,7 @@ class NotEquals(BoolExpression):
         self.opStr = "!="
         self.type = SlangParser.NotEquals_opContext
         self.gba = None
+        self.func = None
         super().__init__(left, right)
         self.smartEval()
     def smartEval(self):
@@ -441,6 +447,7 @@ class OrOp(BoolExpression):
         self.opStr = "||"
         self.type = SlangParser.Or_opContext
         self.gba = "or"
+        self.func = None
         super().__init__(left, right)
         #print(f"OrOp Value: {self.value}")
         self.smartEval()
@@ -460,6 +467,7 @@ class XorOp(BoolExpression):
         self.opStr = "^"
         self.type = SlangParser.Xor_opContext
         self.gba = "xor"
+        self.func = None
         super().__init__(left, right)
         #print(f"XorOp Value: {self.value}")
         self.smartEval()
@@ -477,6 +485,7 @@ def getXor(exp:SlangParser.Xor_opContext)->XorOp:
 
 def getIdentList(identList:SlangParser.IdentListContext)->list[IDENT]:
     children = identList.children[1:-1] #remove first and last element '(' and ')'
+    children = list(filter(lambda x: not isinstance(x, TerminalNodeImpl), children))
     return [getIDENT(c) for c in children]
 
 class FunctionDecl():

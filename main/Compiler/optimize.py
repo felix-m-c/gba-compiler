@@ -1,5 +1,5 @@
-REMOVE_COMMENTS         = True
-REMOVE_EMPTY_LINES      = True
+REMOVE_COMMENTS         = False
+REMOVE_EMPTY_LINES      = False
 UPPERCASE_REGISTERS     = True
 
 

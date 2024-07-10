@@ -79,7 +79,7 @@ functionCall
     ;
     
 byteArray: 'bytes' ws? ident newline? ws? '[' newline? ws? byteList newline? ws? ']';
-byteList:  (ws? s_int ',' newline?)+ ws? s_int;
+byteList:  (ws? s_int ',' ws? newline?)+ ws? s_int;
 
 s_int   : INT;
 INT     : [0-9]+

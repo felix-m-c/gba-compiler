@@ -7,15 +7,6 @@ from optimize import optimizeAsm
 
 DEBUG = False
 
-"""
-add SP, -1      # platz machen
-ld a, 10        # wert in a laden
-ld HL, SP+0     # neuen stack pointer nach HL laden
-ld (HL), a      # a nach (HL) auf dem stack speichern
-
-außerdem: symbol table nachschlagen
-"""
-
 
 REGISTER_ORDER = ['a', 'c', 'b', 'e', 'd']
 REGISTER_16_ORDER = ['hl', 'de', 'bc']
@@ -28,7 +19,7 @@ class GlobalManager():
     
     def add(self, newVar:IDENT):
         if newVar.name in self.globalVars.keys():
-            oldSize = self.globalVars[name].size
+            oldSize = self.globalVars[newVar.name].size
             if newVar.size != oldSize:
                 raise RuntimeError(f"global var {newVar.name} was already defined with size {oldSize}, not {newVar.size}")
         else:
@@ -201,7 +192,8 @@ def buildMain(block:Block)->list:
     ctx = ContextManager("main", globalManager)
     mainBlockAsm, functions = buildBlock(block, startContext=ctx, name="main")
 
-    head = ".include \"../framework.asm\""
+    head = ".include \"../framework.asm\"\n"+\
+           ".include \"../customMagic.asm\""
     pre = "\n;; --- main section --- \n.section \"main\"\n  main:"
     post = "\n    ret\n.ends"
     glo = globalPrinter(globalManager)
@@ -253,7 +245,7 @@ def functionCall(call:FunctionCall, ctx)->list:
     if len(params)>len(REGISTER_ORDER):
         raise NotImplementedError(f"tried to call function with too many parameters: {len(params)} (max: {len(REGISTER_ORDER)})")
 
-    if name in ["loadTiles1bpp", "setTiles"]:
+    if name in ["loadTiles", "loadTiles1bpp", "setTiles", "setWindowTiles", "loadPalettes"]:
         print(params)
         asm.append(["ld", "hl", f"{params[0].name}"])
         params = params[1:]
@@ -297,12 +289,14 @@ def loadValue(value, ctx:ContextManager, register="a")->list:
     elif isinstance(value, FunctionCall):
         asm.extend(functionCall(value, ctx))
     elif isinstance(value, ArithmeticExp):
-        inst = value.gba
-        if inst is None:
+        if not value.gba is None:
+            asm.extend(loadValue(value.right, ctx, "b"))
+            asm.extend(loadValue(value.left, ctx, "a"))
+            asm.append([value.gba, "b"])
+        elif not value.func is None:
+            asm.extend(functionCall(FunctionCall(value.func, [value.left, value.right]), ctx))
+        else:
             raise NotImplementedError(f"unable to convert expression of type {type(value).__name__} to asm at this time")
-        asm.extend(loadValue(value.right, ctx, "b"))
-        asm.extend(loadValue(value.left, ctx, "a"))
-        asm.append([inst, "b"])
     elif isinstance(value, BoolExpression):
         if DEBUG: print("# building bool expression")
         asm.extend(loadValue(value.right, ctx, "b"))
