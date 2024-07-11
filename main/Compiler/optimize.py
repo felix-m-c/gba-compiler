@@ -1,6 +1,7 @@
-REMOVE_COMMENTS         = False
-REMOVE_EMPTY_LINES      = False
+REMOVE_COMMENTS         = True
+REMOVE_EMPTY_LINES      = True
 UPPERCASE_REGISTERS     = True
+REMOVE_INDENT = True
 
 
 def optimizeAsm(asm:list[list[str]]):
@@ -13,5 +14,4 @@ def optimizeAsm(asm:list[list[str]]):
             for j, x in enumerate(line):
                 if x in ['a', 'c', 'b', 'e', 'd', 'hl', 'de', 'bc']:
                     asm[i][j]=x.upper()
-                
     return asm

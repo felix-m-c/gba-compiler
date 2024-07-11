@@ -332,9 +332,11 @@ def updateState() {
     }
 }
 
+global statusBarAnimationCounter = 0
 def updateStatusBar() {
     setTile(tool, 1, statusBar)
     setTile(color, 3, statusBar)
+    
 }
 
 def toolPen() {
@@ -433,20 +435,30 @@ def drawBoxFilled() {
     }
 
     x = fromX
-    while (x != (toX+1)) {
+    while (x != toX) {
         y = fromY
-        while (y != (toY+1)) {
+        while (y != toY) {
             setTile(color, x, y)
             y = y + 1
             if (y==drawareaY) {
                 y = 0
             }
         }
+        setTile(color, x, toY)
         x = x + 1
         if (x == drawareaX) {
             x = 0
         }
     }
+    y = fromY
+    while (y != toY) {
+        setTile(color, toX, y)
+        y = y + 1
+        if (y==drawareaY) {
+            y = 0
+        }
+    }
+    setTile(color, toX, toY)
 }
 
 def toolLine() {
@@ -456,14 +468,72 @@ def toolLine() {
         }
     } else {
         if (toolWasActive) {
-            drawLine()
+            #drawLineSW()
             setSpritePosition(1, 0, 0) #remove placeholder
         }
     }
 }
-def drawLine() {
+def drawLineSW() {
     # from xPos2, yPos2 to xPos, yPos
-    a = 1
+    x = xPos2
+    y = yPos2
+    setTile(4, xPos, 0)
+    setTile(4, 0, yPos)
+    setTile(5, x, 0)
+    setTile(5, 0, y)
+
+    there = False
+    while (there==False) {
+        xMove = lineGetClosestX(x, y)
+        yMove = lineGetClosestY(x, y)
+        x = x + xMove
+        y = y + yMove
+        setTile(color, x, y)
+        there = thereCalc(x, y)
+    }
+}
+def thereCalc(x, y) {
+    t = (x==xPos) & (y==yPos)
+    return(t)
+}
+def lineGetClosestX(x, y) {
+    distW = lineDist((x+1), y)
+    distS = lineDist(x, (y+1))
+    distSW = lineDist((x+1), (y+1))
+    m = max3(distW, distS, distSW)
+    if (distS==m) {
+        return(0)
+    } else {
+        return(1)
+    }
+}
+def lineGetClosestY(x, y) {
+    distW = lineDist((x+1), y)
+    distS = lineDist(x, (y+1))
+    distSW = lineDist((x+1), (y+1))
+    m = max3(distW, distS, distSW)
+    if (distW==m) {
+        return(0)
+    } else {
+        return(1)
+    }
+}
+def lineDist(x, y) {
+    d = ((x-xPos) + (y-yPos)) + ((x-xPos2) + (y-yPos2))
+    return(d)
+}
+def max(a, b) {
+    g = greater(a, b)
+    if (g) {
+        return(a)
+    } else {
+        return(b)
+    }
+}
+def max3(a, b, c) {
+    m1 = max(a, b)
+    m = max(m1, c)
+    return(m)
 }
 
 def toolLogic() {

@@ -3,9 +3,11 @@ from antlr4.tree.Tree import TerminalNodeImpl, Token
 from abstractTree import *
 from transformAST import getTempName
 from dataclasses import dataclass
-from optimize import optimizeAsm
+from optimize import optimizeAsm, REMOVE_COMMENTS
 
 DEBUG = False
+ASM_COMMENT = True
+ASM_EMPTY = False
 
 
 REGISTER_ORDER = ['a', 'c', 'b', 'e', 'd']
@@ -132,7 +134,10 @@ def globalPrinter(globalManager:GlobalManager):
     out = []
     indent = 1
     for v in globalManager.globalVars:
-        out.append(f"{'  '*indent}{v} db ; uint8 {v};")
+        if REMOVE_COMMENTS:
+            out.append(f"{'  '*indent}{v} db")
+        else:
+            out.append(f"{'  '*indent}{v} db ; uint8 {v};")
     
     arrays = []
     for a in globalManager.arrays:
