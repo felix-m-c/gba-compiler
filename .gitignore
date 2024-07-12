@@ -1,9 +1,10 @@
-gba/**/*
+gba
 **/*.pyc
-main/Compiler/out/
 *.interp
+**/.antlr
+main/Assembler/
+main/Emulicious/
+main/reference/
+
 main/Compiler/code.asm
-main/Compiler/.antlr
-main/Emulicious/Emulicious.ini
-main/Compiler/.antlr/
-main/Assembler/build/
+main/Compiler/out/
