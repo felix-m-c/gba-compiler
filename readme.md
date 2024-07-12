@@ -18,7 +18,10 @@ The assembler expects *customMagic.asm* and *framework.asm* to be one folder abo
 *Slang* looks somewhat like python, but with brackets instead of indents.
 Examples of Slang code may be found in main/Compiler/SlangCode.
 
-
+## Paint Program
+This repo contains multiple test scripts
+A reference program is implemented in *draw.s*.
+[paint implemented in Slang for the Gameboy](assets/Screenshot1.png)
 
 ---
 
