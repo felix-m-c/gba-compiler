@@ -54,7 +54,7 @@ def main():
     print("\n------ Assembly ------")
     asmText = buildMain(mainBlock)
     print("-"*20)
-    print(asmText)
+    #print(asmText)
 
     with open(OUTFILE, "w", encoding="UTF-8") as oFile:
         oFile.write(asmText)
