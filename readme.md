@@ -22,6 +22,7 @@ Examples of Slang code may be found in main/Compiler/SlangCode.
 This repo contains multiple test scripts
 A reference program is implemented in *draw.s*.
 <img src="assets/Screenshot1.png" width="512"/>
+
 ---
 
 ## Actually getting things to work (WIP)
