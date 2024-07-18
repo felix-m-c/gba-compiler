@@ -21,8 +21,7 @@ Examples of Slang code may be found in main/Compiler/SlangCode.
 ## Paint Program
 This repo contains multiple test scripts
 A reference program is implemented in *draw.s*.
-![paint implemented in Slang for the Gameboy](assets/Screenshot1.png)
-
+<img src="assets/Screenshot1.png" width="128"/>
 ---
 
 ## Actually getting things to work (WIP)
